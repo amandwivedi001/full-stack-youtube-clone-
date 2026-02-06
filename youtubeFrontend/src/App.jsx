@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import './App.css'
+import { RouterProvider } from 'react-router-dom'
+import Router from './routes/AppRoutes'
+import { AuthProvider } from './context/AuthContext'
 
 function App() {
 
   return (
     <>
-      <h1 class="bg-amber-700 text-2xl  text-gray-900">
-        YouTube Clone Frontend
-      </h1>
-
+      <AuthProvider>
+        <h2>App is working</h2>
+        <RouterProvider router={Router} />
+      </AuthProvider>
     </>
   )
 }

@@ -3,6 +3,7 @@ import { Like } from "../models/like.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiRes } from "../utils/ApiRes.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const { videoId } = req.params
@@ -23,6 +24,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     let action;
     if (isExist) {
         await Like.deleteOne({ _id: isExist._id })
+        await Video.findByIdAndUpdate(videoId, { $inc: { likeCount: -1 } })
         action = 'unliked'
     }
     else {
@@ -30,6 +32,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
             video: videoId,
             likedBy: userId
         })
+        await Video.findByIdAndUpdate(videoId, { $inc: { likeCount: 1 } })
         action = 'liked'
     }
 

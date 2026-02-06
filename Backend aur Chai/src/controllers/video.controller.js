@@ -123,7 +123,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         title: title,
         description: description,
         duration: duration,
-        owner: userId
+        owner: userId,
     })
 
     return res
@@ -143,6 +143,22 @@ const getVideoById = asyncHandler(async (req, res) => {
     if (!mongoose.isValidObjectId(videoId)) {
         throw new ApiError(400, 'Enter valid video id')
     }
+
+    const viewKey = `viewed_${videoId}`;
+
+    if(!req.cookies[viewKey]){
+        await Video.findByIdAndUpdate(
+            videoId,
+            {$inc : {views: +1}}
+        )
+
+        res.cookie(viewKey, true, {
+            maxAge: 24 * 60 * 60 * 1000, 
+            httpOnly: true,
+            sameSite: 'lax'
+        });
+    }
+
     const video = await Video.findById(videoId);
 
     if (video == null) {
@@ -153,7 +169,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         .json(
             new ApiRes(
                 200,
-                video.videoFile,
+                video,
                 'Video fetched successfully'
             )
         )
