@@ -134,6 +134,8 @@ const loginUser = asyncHandler(async (req, res) => {
         "-password -refreshToken"
     );
 
+    const isProd = process.env.NODE_ENV === "production";
+    
     const options = {
         httpOnly: true,
         secure: isProd,
