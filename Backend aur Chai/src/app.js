@@ -27,6 +27,7 @@ import dashboardRouter from "./routes/dashboard.route.js"
 
 
 //routes declaration
+app.get("/", (req, res) => {res.send("Backend is running 🚀");});
 app.use("/api/v1/healthcheck", healthcheckRouter)
 app.use("/api/v1/user", userRouter)
 app.use("/api/v1/tweets", tweetRouter)
