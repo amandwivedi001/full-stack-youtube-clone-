@@ -4,9 +4,10 @@ import { useNavigate } from "react-router-dom";
 
 const SignUp = () => {
     const [btnLoading, setbtnLoading] = useState(false)
-    const  [form, setForm] = useState({
+    const [form, setForm] = useState({
         fullname: "",
         username: "",
+        avatar: null,
         email: "",
         password: "",
     });
@@ -19,7 +20,7 @@ const SignUp = () => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     }
 
-    const handlesubmit = async(e) => {
+    const handlesubmit = async (e) => {
         e.preventDefault();
 
         seterrMsg("");
@@ -35,7 +36,7 @@ const SignUp = () => {
         }
     }
     return (
-        <div class="padding: 20px">
+        <div className="p-5">
 
             <h2>Sign-Up</h2>
 
@@ -55,6 +56,25 @@ const SignUp = () => {
                     onChange={handlechange}
                 />
                 <br />
+
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                        setForm({ ...form, avatar: e.target.files[0] })
+                    }
+                />
+                <br />
+
+                {form.avatar instanceof File && (
+                    <img
+                        src={URL.createObjectURL(form.avatar)}
+                        alt="preview"
+                        className="w-20 h-20 rounded-full object-cover"
+                    />
+                )}
+                <br/>
+
 
                 <input
                     name="email"

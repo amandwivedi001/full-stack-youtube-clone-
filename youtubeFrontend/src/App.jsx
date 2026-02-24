@@ -9,7 +9,6 @@ function App() {
   return (
     <>
       <AuthProvider>
-        <h2>App is working</h2>
         <RouterProvider router={Router} />
       </AuthProvider>
     </>

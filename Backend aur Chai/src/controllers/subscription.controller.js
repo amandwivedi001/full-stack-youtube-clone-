@@ -8,48 +8,46 @@ import { lookup } from "dns"
 
 
 const toggleSubscription = asyncHandler(async (req, res) => {
-    const { channelId } = req.params
-    // TODO: toggle subscription
-    // taking user id from frontend
-    // check weather it is subscribed or not
-    // weather the statement return vice-versa
+  const { channelId } = req.params;
+  const userId = req.user._id;
 
-    const userId = req.user._id;
-    if (!channelId) {
-        return new ApiError(401, 'Enter valid user channel')
-    }
+  if (!channelId) {
+    throw new ApiError(400, 'Enter valid channel id');
+  }
 
-    if (channelId.toString() === userId.toString()) {
-        return res.status(400).json(new ApiError(400, "You cannot subscribe to yourself"));
-    }
+  if (channelId.toString() === userId.toString()) {
+    throw new ApiError(400, 'You cannot subscribe to yourself');
+  }
 
-    const exists = await Subscription.findOne({ subscriber: userId, channel: channelId })
+  const exists = await Subscription.findOneAndDelete({
+    subscriber: userId,
+    channel: channelId,
+  });
 
-    if (exists) {
-        await Subscription.deleteOne({ subscriber: userId, channel: channelId });
-        return res
-            .status(200)
-            .json(
-                new ApiRes(
-                    200,
-                    exists,
-                    'Unsuscribed user'
-                )
-            )
-    }
-    else {
-        const created = await Subscription.create({ subscriber: userId, channel: channelId });
-        return res
-            .status(200)
-            .json(
-                new ApiRes(
-                    200,
-                    created,
-                    'Suscribed user'
-                )
-            )
-    }
-})
+  if (exists) {
+    return res.status(200).json(
+      new ApiRes(
+        200,
+        null,
+        'Unsubscribed user'
+      )
+    );
+  }
+
+  const created = await Subscription.create({
+    subscriber: userId,
+    channel: channelId,
+  });
+
+  return res.status(201).json(
+    new ApiRes(
+      201,
+      created,
+      'Subscribed user'
+    )
+  );
+});
+
 
 // controller to return subscriber list of a channel
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {

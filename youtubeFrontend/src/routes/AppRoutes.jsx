@@ -6,6 +6,7 @@ import Login from '../pages/login';
 import Logout from '../pages/Logout';
 import Upload from "../pages/Upload";
 import Watch from '../pages/Watch';
+import Channel from '../pages/Channel';
 
 const Router = createBrowserRouter(
     createRoutesFromElements(
@@ -16,6 +17,7 @@ const Router = createBrowserRouter(
             <Route path='logout' element={<Logout/>}/>
             <Route path='upload' element={<Upload/>}/>
             <Route path='watch/:videoId' element={<Watch/>}/>
+            <Route path='channel/:username' element={<Channel/>}/>
         </Route>
     )
 )

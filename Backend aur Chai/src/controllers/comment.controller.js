@@ -3,7 +3,7 @@ import { Comment } from "../models/comment.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiRes } from "../utils/ApiRes.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-
+import { User } from "../models/user.model.js"
 const getVideoComments = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const { page = 1, limit = 10 } = req.query;
@@ -51,6 +51,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
+    console.log("PARAMS:", req.params);
+    console.log("BODY:", req.body);
+    console.log("USER:", req.user);
+
     const { videoId } = req.params
 
     if (!mongoose.isValidObjectId(videoId)) {

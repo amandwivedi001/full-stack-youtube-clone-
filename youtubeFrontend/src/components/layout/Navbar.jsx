@@ -5,30 +5,33 @@ const Navbar = () => {
   const { user } = useAuth();
 
   return (
-    <div
-      style={{
-        height: "60px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 16px",
-        borderBottom: "1px solid #ddd",
-      }}
-    >
-      <Link to="/" style={{ textDecoration: "none" }}>
-        <h2>YouTubeClone</h2>
+    <div className="h-14 flex items-center justify-between px-4 border-b dark:border-gray-700">
+      <Link to="/" className="text-xl font-semibold">
+        YouTubeClone
       </Link>
 
-      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+      <div className="flex items-center gap-4">
         {!user ? (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/signup">Signup</Link>
+            <Link to="/login" className="text-sm hover:underline">
+              Login
+            </Link>
+            <Link to="/signup" className="text-sm hover:underline">
+              Signup
+            </Link>
           </>
         ) : (
           <>
-            <Link to="/profile">{user?.username || "Profile"}</Link>
-            <Link to="/logout">logout</Link>
+            <Link to="/profile" className="text-sm font-medium">
+              <img
+                src={user.avatar}
+                alt="avatar"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            </Link>
+            <Link to="/logout" className="text-sm font-medium">
+              logout
+            </Link>
           </>
         )}
       </div>

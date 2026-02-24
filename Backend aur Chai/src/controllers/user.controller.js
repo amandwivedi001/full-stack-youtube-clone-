@@ -35,14 +35,17 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res 
 
     const { fullname, email, username, password } = req.body
-    console.log("email :", email);
+    console.log("BODY:", req.body);
+    console.log("FILES:", req.file, req.files);
 
     if (
-        [fullname, email, username, password].some((field) =>
-            field?.trim() === "")
+        [fullname, email, username, password].some(
+            (field) => !field || field.toString().trim() === ""
+        )
     ) {
-        throw new ApiError("400", "All field are required")
+        throw new ApiError(400, "All fields are required");
     }
+
 
     const existedUser = await User.findOne({
         $or: [{ email }, { username }]
@@ -133,7 +136,8 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
     };
 
     return res
@@ -188,36 +192,36 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             incomingRefreshToken,
             process.env.REFRESH_TOKEN_SECRET
         )
-    
+
         const user = await User.findById(decodedToken?._id)
-    
+
         if (!user) {
             throw new ApiError(401, "Invalid refresh token")
         }
-    
+
         if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "Refresh token is expired or used")
-            
+
         }
-    
+
         const options = {
             httpOnly: true,
             secure: false
         }
-    
-        const {accessToken, newRefreshToken} = await generateAccessandRefereshToken(user._id)
-    
+
+        const { accessToken, newRefreshToken } = await generateAccessandRefereshToken(user._id)
+
         return res
-        .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", newRefreshToken, options)
-        .json(
-            new ApiRes(
-                200, 
-                {accessToken, refreshToken: newRefreshToken},
-                "Access token refreshed"
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json(
+                new ApiRes(
+                    200,
+                    { accessToken, refreshToken: newRefreshToken },
+                    "Access token refreshed"
+                )
             )
-        )
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid refresh token")
     }
@@ -473,7 +477,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                                 ]
                             }
                         }
-                        
+
                     ]
             },
         },

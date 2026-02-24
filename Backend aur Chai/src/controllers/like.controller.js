@@ -6,45 +6,43 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { Video } from "../models/video.model.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: toggle like on video
+  const { videoId } = req.params;
+  const userId = req.user._id;
 
-    const userId = req.user?._id
+  if (!mongoose.isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video Id");
+  }
 
-    if (!mongoose.isValidObjectId(videoId)) {
-        throw new ApiError(400, 'Invalid video Id')
-    }
+  const deletedLike = await Like.findOneAndDelete({
+    video: videoId,
+    likedBy: userId
+  });
 
-    if (!mongoose.isValidObjectId(userId)) {
-        throw new ApiError(400, 'Invalid user Id')
-    }
+  let action;
 
-    const isExist = await Like.findOne({ video: videoId, likedBy: userId })
+  if (deletedLike) {
+    await Video.findOneAndUpdate(
+      { _id: videoId, likeCount: { $gt: 0 } },
+      { $inc: { likeCount: -1 } }
+    );
+    action = "unliked";
+  } else {
+    await Like.create({
+      video: videoId,
+      likedBy: userId
+    });
+    await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { likeCount: 1 } }
+    );
+    action = "liked";
+  }
 
-    let action;
-    if (isExist) {
-        await Like.deleteOne({ _id: isExist._id })
-        await Video.findByIdAndUpdate(videoId, { $inc: { likeCount: -1 } })
-        action = 'unliked'
-    }
-    else {
-        await Like.create({
-            video: videoId,
-            likedBy: userId
-        })
-        await Video.findByIdAndUpdate(videoId, { $inc: { likeCount: 1 } })
-        action = 'liked'
-    }
+  return res.status(200).json(
+    new ApiRes(200, `Video ${action} successfully`)
+  );
+});
 
-    return res
-        .status(200)
-        .json(
-            new ApiRes(
-                200,
-                `Video is ${action} successfully`
-            )
-        )
-})
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
     const { commentId } = req.params
@@ -170,14 +168,14 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 
 
     return res
-    .status(200)
-    .json(
-        new ApiRes(
-            200,
-            videos,
-            'All liked video fetched Successfully'
+        .status(200)
+        .json(
+            new ApiRes(
+                200,
+                videos,
+                'All liked video fetched Successfully'
+            )
         )
-    )
 })
 
 export {
