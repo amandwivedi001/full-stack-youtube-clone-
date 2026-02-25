@@ -74,14 +74,14 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const data = await Video.aggregate(pipeline)
 
     return res
-    .status(200)
-    .json(
-        new ApiRes(
-            200,
-            data,
-            'Video fetched successfully'
+        .status(200)
+        .json(
+            new ApiRes(
+                200,
+                data,
+                'Video fetched successfully'
+            )
         )
-    )
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
@@ -147,16 +147,17 @@ const getVideoById = asyncHandler(async (req, res) => {
 
     const viewKey = `viewed_${videoId}`;
 
-    if(!req.cookies[viewKey]){
+    if (!req.cookies[viewKey]) {
         await Video.findByIdAndUpdate(
             videoId,
-            {$inc : {views: +1}}
+            { $inc: { views: +1 } }
         )
 
         res.cookie(viewKey, true, {
-            maxAge: 24 * 60 * 60 * 1000, 
+            maxAge: 24 * 60 * 60 * 1000,
             httpOnly: true,
-            sameSite: 'lax'
+            sameSite: "none",   
+            secure: true       
         });
     }
 
