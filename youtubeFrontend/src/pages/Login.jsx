@@ -68,7 +68,7 @@ const Login = () => {
                 <br />
 
                 <button>
-                    {btnLoading ? "...creating" : "Login"}
+                    {btnLoading ? "...logging in" : "Login"}
                 </button>
             </form>
 

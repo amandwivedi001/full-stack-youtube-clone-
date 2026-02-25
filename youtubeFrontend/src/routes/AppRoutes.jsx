@@ -2,7 +2,7 @@ import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider} f
 import Home from "../pages/Home";
 import Signup from "../pages/SignUp";
 import Layout from "../pages/Layout";
-import Login from '../pages/login';
+import Login from '../pages/Login';
 import Logout from '../pages/Logout';
 import Upload from "../pages/Upload";
 import Watch from '../pages/Watch';
