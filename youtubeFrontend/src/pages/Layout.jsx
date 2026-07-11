@@ -1,19 +1,21 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
-import Sidebar from "../components/layout/Sidebar";
+import Sidebar, { MobileNav } from "../components/layout/Sidebar";
 
 const Layout = () => {
   return (
-    <div>
+    <div className="min-h-screen bg-white text-neutral-950">
       <Navbar />
 
-      <div style={{ display: "flex" }}>
+      <div className="flex">
         <Sidebar />
 
-        <div style={{ flex: 1, padding: "16px" }}>
+        <main className="min-w-0 flex-1 px-4 py-5 pb-24 sm:px-6 md:pb-8 lg:px-8">
           <Outlet />
-        </div>
+        </main>
       </div>
+
+      <MobileNav />
     </div>
   );
 };
