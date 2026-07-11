@@ -40,4 +40,15 @@ app.use("/api/v1/likes", likeRouter)
 app.use("/api/v1/playlist", playlistRouter)
 app.use("/api/v1/dashboard", dashboardRouter)
 
+app.use((err, req, res, next) => {
+    const statusCode = Number(err?.statusCode) || 500;
+
+    return res.status(statusCode).json({
+        success: false,
+        message: err?.message || "Internal server error",
+        errors: err?.errors || [],
+        data: null
+    });
+})
+
 export { app }

@@ -5,7 +5,6 @@ import { Like } from "../models/like.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiRes } from "../utils/ApiRes.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { channel } from "diagnostics_channel"
 
 const getChannelStats = asyncHandler(async (req, res) => {
   const userId = req.user && req.user._id;
@@ -84,7 +83,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
                 title: 1,
                 thumbnail: 1,
                 views: 1,
-                likes: 1,
+                likeCount: 1,
                 duration: 1,
                 createdAt: 1,
 

@@ -1,9 +1,9 @@
 import mongoose from "mongoose"
 import { Comment } from "../models/comment.model.js"
+import { Video } from "../models/video.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiRes } from "../utils/ApiRes.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
-import { User } from "../models/user.model.js"
 const getVideoComments = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const { page = 1, limit = 10 } = req.query;
@@ -33,6 +33,14 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
         {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "comment",
+                as: "likes"
+            }
+        },
+        {
             $project: {
                 content: 1,
                 createdAt: 1,
@@ -51,10 +59,6 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
-    console.log("PARAMS:", req.params);
-    console.log("BODY:", req.body);
-    console.log("USER:", req.user);
-
     const { videoId } = req.params
 
     if (!mongoose.isValidObjectId(videoId)) {
@@ -63,10 +67,20 @@ const addComment = asyncHandler(async (req, res) => {
 
     const { comment } = req.body
 
+    if (!comment?.trim()) {
+        throw new ApiError(400, 'Comment cannot be empty')
+    }
+
+    const video = await Video.findById(videoId)
+
+    if (!video) {
+        throw new ApiError(404, 'Video not found')
+    }
+
     const userId = req.user?._id
 
     const AddedComment = await Comment.create({
-        content: comment,
+        content: comment.trim(),
         video: videoId,
         owner: userId
     })
@@ -99,12 +113,19 @@ const updateComment = asyncHandler(async (req, res) => {
         throw new ApiError(404, 'Such comment does not exist to update');
     }
 
+    if (commentExist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, 'You are not allowed to update this comment')
+    }
+
+    if (!comment?.trim()) {
+        throw new ApiError(400, 'Comment cannot be empty')
+    }
 
     await Comment.findByIdAndUpdate(
         commentId,
         {
             $set: {
-                content: comment
+                content: comment.trim()
             }
         },
         { new: true }
@@ -129,6 +150,15 @@ const deleteComment = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid Comment Id')
     }
 
+    const comment = await Comment.findById(commentId)
+
+    if (!comment) {
+        throw new ApiError(404, 'Comment not found')
+    }
+
+    if (comment.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, 'You are not allowed to delete this comment')
+    }
 
     await Comment.findByIdAndDelete(commentId)
 

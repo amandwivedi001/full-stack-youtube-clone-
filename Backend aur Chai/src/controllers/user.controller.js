@@ -20,7 +20,6 @@ const generateAccessandRefereshToken = async (userId) => {
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating access and referesh token")
     }
-
 }
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -35,8 +34,6 @@ const registerUser = asyncHandler(async (req, res) => {
     // return res 
 
     const { fullname, email, username, password } = req.body
-    console.log("BODY:", req.body);
-    console.log("FILES:", req.file, req.files);
 
     if (
         [fullname, email, username, password].some(
@@ -52,10 +49,10 @@ const registerUser = asyncHandler(async (req, res) => {
     })
 
     if (existedUser) {
-        throw new ApiError("409", "User with email or userName already exist")
+        throw new ApiError(409, "User with email or userName already exist")
     }
 
-    const avatarLocalpath = req.files?.avatar[0]?.path;
+    const avatarLocalpath = req.files?.avatar?.[0]?.path;
     // const coverImageLocalPath = req.files?.coverImage[0]?.path
 
     let coverImageLocalPath;
@@ -91,7 +88,7 @@ const registerUser = asyncHandler(async (req, res) => {
     );
 
     if (!createdUser) {
-        throw ApiError(500, "Something went wrong while registering the user")
+        throw new ApiError(500, "Something went wrong while registering the user")
     }
 
     return res.status(201).json(
@@ -135,7 +132,7 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 
     const isProd = process.env.NODE_ENV === "production";
-    
+
     const options = {
         httpOnly: true,
         secure: isProd,
@@ -147,12 +144,15 @@ const loginUser = asyncHandler(async (req, res) => {
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
-            new ApiRes({
-                user: loggedInUser,
-                accessToken,
-                refreshToken,
-                message: "User logged in successfully",
-            })
+            new ApiRes(
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken
+                },
+                "User logged in successfully"
+            )
         );
 })
 
@@ -169,9 +169,12 @@ const logOutUser = asyncHandler(async (req, res) => {
         }
     )
 
+    const isProd = process.env.NODE_ENV === "production";
+
     const options = {
         httpOnly: true,
-        secure: true
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
     }
 
     return res
@@ -206,21 +209,24 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         }
 
+        const isProd = process.env.NODE_ENV === "production";
+
         const options = {
             httpOnly: true,
-            secure: false
+            secure: isProd,
+            sameSite: isProd ? "none" : "lax",
         }
 
-        const { accessToken, newRefreshToken } = await generateAccessandRefereshToken(user._id)
+        const { accessToken, refreshToken } = await generateAccessandRefereshToken(user._id)
 
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("refreshToken", refreshToken, options)
             .json(
                 new ApiRes(
                     200,
-                    { accessToken, refreshToken: newRefreshToken },
+                    { accessToken, refreshToken },
                     "Access token refreshed"
                 )
             )
@@ -247,8 +253,8 @@ const changeUserPassword = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Old password is incorrect")
     }
 
-    user.password = newPassword,
-        user.save({ validateBeforeSave: false })
+    user.password = newPassword
+    await user.save({ validateBeforeSave: false })
 
     return res
         .status(200)
@@ -278,15 +284,15 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body
 
     if (!(fullname || email)) {
-        throw new ApiError(400, "Both email and fullname are mandatory")
+        throw new ApiError(400, "Email or fullname is required")
     }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                fullname,
-                email
+                ...(fullname !== undefined ? { fullname } : {}),
+                ...(email !== undefined ? { email } : {})
             }
         },
         { new: true }
@@ -310,7 +316,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Avatar file is missing")
     }
 
-    const avatar = uploadOnCloudinary(avatarLocalpath);
+    const avatar = await uploadOnCloudinary(avatarLocalpath);
 
     if (!avatar.url) {
         throw new ApiError(400, "Error while avatar file is uploading")
@@ -344,7 +350,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "CoverImage file is missing")
     }
 
-    const coverImage = uploadOnCloudinary(coverImageLocalpath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalpath);
 
     if (!coverImage.url) {
         throw new ApiError(400, "Error while coverImage file is uploading")
@@ -402,13 +408,13 @@ const getUserChannel = asyncHandler(async (req, res) => {
         },
         {
             $addFields: {
-                suscriberCount: {
+                subscriberCount: {
                     $size: "$subscribers"
                 },
-                channelsSuscribedCount: {
+                subscribedChannelsCount: {
                     $size: "$subscribed"
                 },
-                isSuscribed: {
+                isSubscribed: {
                     $cond: {
                         if: { $in: [req.user?._id, "$subscribers.subscriber"] },
                         then: true,
@@ -422,9 +428,9 @@ const getUserChannel = asyncHandler(async (req, res) => {
                 fullname: 1,
                 username: 1,
                 email: 1,
-                suscriberCount: 1,
-                channelsSuscribedCount: 1,
-                isSuscribed: 1,
+                subscriberCount: 1,
+                subscribedChannelsCount: 1,
+                isSubscribed: 1,
                 avatar: 1,
                 coverImage: 1
             }
@@ -457,32 +463,81 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         {
             $lookup: {
                 from: "videos",
-                localField: "watchHistory",
-                foreignField: "_id",
-                as: "watchHistory",
-                pipeline:
-                    [
-                        {
-                            $lookup: {
-                                from: "users",
-                                localField: "owner",
-                                foreignField: "_id",
-                                as: "owner",
-                                pipeline: [
+                let: { history: "$watchHistory" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $in: [
+                                    "$_id",
                                     {
-                                        $project: {
-                                            fullname: 1,
-                                            username: 1,
-                                            avatar: 1
+                                        $map: {
+                                            input: "$$history",
+                                            as: "item",
+                                            in: "$$item.video"
                                         }
                                     }
                                 ]
                             }
                         }
-
-                    ]
-            },
-        },
+                    },
+                    {
+                        $addFields: {
+                            watchedAt: {
+                                $arrayElemAt: [
+                                    {
+                                        $map: {
+                                            input: {
+                                                $filter: {
+                                                    input: "$$history",
+                                                    as: "item",
+                                                    cond: {
+                                                        $eq: ["$$item.video", "$_id"]
+                                                    }
+                                                }
+                                            },
+                                            as: "item",
+                                            in: "$$item.watchedAt"
+                                        }
+                                    },
+                                    0
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $sort: {
+                            watchedAt: -1
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullname: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ],
+                as: "watchHistory"
+            }
+        }
 
     ])
 

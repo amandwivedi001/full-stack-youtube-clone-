@@ -105,7 +105,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     else {
         const playlistWithVideos = await Playlist.aggregate([
             {
-                $match: { _id: playlistId }
+                $match: { _id: new mongoose.Types.ObjectId(playlistId)}
             },
             {
                 $lookup: {
@@ -117,9 +117,11 @@ const getPlaylistById = asyncHandler(async (req, res) => {
                         {
                             $project: {
                                 title: 1,
+                                thumbnail: 1,
                                 discription: 1,
                                 createdAt: 1,
-                                duration: 1
+                                duration: 1,
+                                views: 1
                             }
                         }
                     ]
