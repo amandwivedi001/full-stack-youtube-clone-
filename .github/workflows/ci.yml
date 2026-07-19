@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - testing-and-scaling
   pull_request:
     branches:
       - main
