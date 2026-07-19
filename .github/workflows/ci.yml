@@ -89,3 +89,6 @@ jobs:
 
       - name: Build frontend Docker image
         run: docker build -t youtube-frontend-test "./youtubeFrontend"
+
+      - name: Validate Docker Compose config
+        run: docker compose config
