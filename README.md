@@ -1,160 +1,212 @@
+# Video Streaming Platform
+
+A MERN-based video sharing platform with authentication, video uploads, playlists, comments, likes, subscriptions, search, notifications, caching, background jobs, Docker, Nginx, and CI.
+
+## Features
+
+- JWT authentication with access and refresh tokens
+- Cloudinary-based video and thumbnail uploads
+- Video feed with search, sorting, pagination, and recommendations
+- Likes, comments, playlists, subscriptions, and watch history
+- Notification system for new uploads from subscribed channels
+- Redis caching for home feed and recommendations
+- Redis-backed rate limiting with memory fallback
+- BullMQ background jobs for async notification processing
+- MongoDB aggregation pipelines and indexes
+- Dockerized backend, frontend, Redis, worker, and Nginx gateway
+- GitHub Actions CI for tests, builds, and Docker validation
+
+## Tech Stack
+
+- Frontend: React, Vite, Tailwind CSS
+- Backend: Node.js, Express.js
+- Database: MongoDB Atlas, Mongoose
+- Cache/Queue: Redis, BullMQ
+- Media Storage: Cloudinary
+- Testing: Vitest, Supertest
+- DevOps: Docker, Docker Compose, Nginx, GitHub Actions
+
 ## Architecture
 
-This project is a MERN-based video sharing platform with a production-style local infrastructure.
+```mermaid
+flowchart LR
+    User["User Browser"] --> Nginx["Nginx Reverse Proxy :80"]
 
-### Services
+    Nginx --> Frontend["Frontend Nginx Container"]
+    Nginx --> Backend1["Backend Instance 1"]
+    Nginx --> Backend2["Backend Instance 2"]
 
-- **Frontend**: React/Vite application built into static files and served by Nginx.
-- **API Backend**: Node.js/Express REST API for authentication, videos, comments, playlists, subscriptions, and dashboard data.
-- **Worker**: BullMQ worker process for asynchronous background jobs such as video-published notifications.
-- **Redis**: Shared cache, rate-limit store, and BullMQ queue backend.
-- **MongoDB Atlas**: Managed source-of-truth database.
-- **Cloudinary**: Media storage for videos, thumbnails, avatars, and cover images.
-- **Root Nginx**: Reverse proxy and load balancer.
+    Backend1 --> MongoDB["MongoDB Atlas"]
+    Backend2 --> MongoDB
 
-### Request Flow
+    Backend1 --> Redis["Redis"]
+    Backend2 --> Redis
 
-```text
-Browser
-    │
-    ▼
-Nginx Reverse Proxy
-    ├── /            ──► Frontend (Nginx)
-    └── /api/v1      ──► Backend API
-                            ├── Redis (Cache / Rate Limits / BullMQ)
-                            ├── MongoDB Atlas
-                            └── Cloudinary
+    Backend1 --> Cloudinary["Cloudinary"]
+    Backend2 --> Cloudinary
+
+    Backend1 --> BullMQ["BullMQ Queue"]
+    Backend2 --> BullMQ
+
+    BullMQ --> Worker["Video Worker"]
+    Worker --> Redis
+    Worker --> MongoDB
 ```
 
-### Background Job Flow
+# Project Documentation
 
-```text
-Video Upload Request
-        │
-        ▼
-API uploads media to Cloudinary
-        │
-        ▼
-API saves video metadata in MongoDB
-        │
-        ▼
-API enqueues BullMQ job in Redis
-        │
-        ▼
-Worker consumes job
-        │
-        ▼
-Worker creates subscriber notifications
-```
+## Request Flow
 
-### Scaling
+The application follows the request flow shown below:
 
-The backend runs behind Nginx as multiple instances.
-
-```text
-                 Nginx Upstream
-                       │
-        ┌──────────────┴──────────────┐
-        ▼                             ▼
-   backend-1                    backend-2
-        │                             │
-        └──────────────┬──────────────┘
-                       ▼
-                    Redis
-                       │
-         Shared cache, rate limits,
-          and BullMQ job queues
-```
-
-Redis is shared across all backend instances so that caching, rate limiting, and background job processing remain consistent across the application.
+1. User opens the application in the browser.
+2. Nginx receives the request on **port 80**.
+3. Frontend routes are served by the **Frontend Nginx container**.
+4. API requests under `/api` are forwarded to the backend containers.
+5. Nginx load balances requests across multiple backend instances.
+6. Backend reads from and writes to **MongoDB Atlas**.
+7. **Redis** is used for:
+   - Caching
+   - Rate limiting
+   - BullMQ queues
+8. **BullMQ workers** process asynchronous jobs such as upload notifications.
 
 ---
 
-## Running With Docker
+## Local Development
 
-### 1. Create the environment file
-
-Copy the example environment configuration:
+### Backend
 
 ```bash
-cp .env.example .env
+cd "Backend aur Chai"
+npm install
+npm run dev
 ```
 
-### 2. Start the application stack
-
-Build and start all services:
+### Frontend
 
 ```bash
-docker compose up -d --build
+cd youtubeFrontend
+npm install
+npm run dev
 ```
 
-### 3. Open the application
+### Redis
 
-Frontend:
-
-```text
-http://localhost
-```
-
-Health Check API:
-
-```text
-http://localhost/api/v1/healthcheck
-```
-
-### Useful Docker Commands
-
-View running containers:
+Run Redis locally using Docker:
 
 ```bash
-docker compose ps
+docker run -d --name yt-redis -p 6379:6379 redis:7-alpine
 ```
 
-View Nginx logs:
+---
+
+## Docker Setup
+
+### Start the Full Stack
 
 ```bash
-docker compose logs -f nginx
+docker compose up --build
 ```
 
-View Backend Instance 1 logs:
-
-```bash
-docker compose logs -f backend-1
-```
-
-View Backend Instance 2 logs:
-
-```bash
-docker compose logs -f backend-2
-```
-
-View Worker logs:
-
-```bash
-docker compose logs -f video-worker
-```
-
-Stop the entire stack:
+### Stop All Containers
 
 ```bash
 docker compose down
 ```
 
+### Validate Docker Compose Configuration
+
+```bash
+docker compose config
+```
+
 ---
 
-## Production Concepts Implemented
+## Testing
 
-This project demonstrates several production-oriented backend engineering concepts:
+Run backend tests:
 
-- JWT authentication with secure HTTP-only cookies
-- Cloudinary media storage for videos, thumbnails, avatars, and cover images
-- MongoDB aggregation pipelines for dashboard and feed queries
-- MongoDB indexes optimized for common access patterns
-- Zod request validation for robust API input validation
-- Helmet security headers
-- Redis caching with TTL and cache invalidation
-- Redis-backed rate limiting
-- BullMQ background job processing
-- Dockerized backend, worker, Redis, and frontend services
-- Nginx reverse proxy and load balancing across backend instances
-- Health check endpoint with dependency status reporting
+```bash
+cd "Backend aur Chai"
+npm test
+```
+
+### Test Coverage
+
+The test suite covers:
+
+- Health check behavior
+- Authentication validation
+- Protected routes
+- Comment ownership
+- Playlist ownership
+- Video ownership
+- Notification ownership
+- Redis cache fallback
+- BullMQ worker behavior
+- Queue job creation
+- Video publish controller behavior
+- Search and recommendation behavior
+- Rate limiter behavior
+- Validation middleware behavior
+
+---
+
+## CI Pipeline
+
+GitHub Actions automatically validates the following:
+
+- Backend test suite
+- Frontend production build
+- Backend Docker image build
+- Frontend Docker image build
+- Docker Compose configuration
+
+---
+
+## Environment Variables
+
+### Backend
+
+```env
+PORT=8000
+MONGODB_URI=
+CORS_ORIGIN=
+
+ACCESS_TOKEN_SECRET=
+ACCESS_TOKEN_EXPIRY=
+
+REFRESH_TOKEN_SECRET=
+REFRESH_TOKEN_EXPIRY=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+REDIS_URL=
+CACHE_DEBUG=false
+```
+
+### Frontend
+
+```env
+VITE_API_BASE_URL=
+```
+
+---
+
+## Scaling Notes
+
+The application is designed to scale horizontally.
+
+- Backend instances are **stateless** and can be replicated.
+- **Nginx** load balances requests across backend containers.
+- Session data is **not stored in server memory**.
+- **Redis** acts as shared infrastructure for:
+  - Caching
+  - Rate limiting
+  - BullMQ queues
+- Background processing is handled by dedicated **BullMQ workers**, keeping long-running tasks outside the request-response lifecycle.
+
+This architecture allows backend instances to be added or removed without affecting application state.
