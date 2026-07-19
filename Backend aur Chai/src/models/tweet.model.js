@@ -14,4 +14,7 @@ const tweetSchema = Schema(
      {timestamps: true}
     )
 
+tweetSchema.index({ owner: 1, createdAt: -1 });
+tweetSchema.index({ content: "text" });
+
 export const Tweet = mongoose.model("Tweet", tweetSchema)

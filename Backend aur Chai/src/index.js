@@ -1,8 +1,8 @@
 // require('dotenv').config({path: "./env"})
 import dotenv from "dotenv"
 import connectDB from "./db/index.js";
-import { app } from "./app.js";
-
+import { createApp } from "./app.js";
+import { connectRedis } from "./db/redis.js";
 dotenv.config({
     path: './.env'
 })
@@ -10,7 +10,10 @@ dotenv.config({
 
 
 connectDB()
-    .then(() => {
+    .then(async () => {
+        await connectRedis();
+        
+        const app = createApp();
 
         app.on("error", (error) => {
             console.log("ERROR :", error);

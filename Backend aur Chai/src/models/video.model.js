@@ -42,6 +42,12 @@ const videoSchema = new Schema({
   }
 }, { timestamps: true });
 
+videoSchema.index({ owner: 1, createdAt: -1 });
+videoSchema.index({ isPublished: 1, createdAt: -1 });
+videoSchema.index({ views: -1 });
+videoSchema.index({ likeCount: -1 });
+videoSchema.index({ title: "text", description: "text" });
+
 videoSchema.plugin(mongooseAggregatePaginate);
 
 export const Video = mongoose.model("Video", videoSchema);

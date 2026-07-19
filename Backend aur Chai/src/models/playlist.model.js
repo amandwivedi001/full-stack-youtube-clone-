@@ -24,4 +24,11 @@ const playlistSchema = Schema(
     { timestamps: true }
 )
 
+playlistSchema.index({ owner: 1, createdAt: -1 });
+
+playlistSchema.index(
+    { owner: 1, name: 1 },
+    { unique: true }
+);
+
 export const Playlist = mongoose.model("Playlist", playlistSchema)

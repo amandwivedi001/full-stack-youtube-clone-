@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 const navItems = [
   { to: "/", label: "Home", end: true },
   { to: "/subscriptions", label: "Subscriptions" },
+  { to: "/notifications", label: "Notifications" },
   { to: "/studio/videos", label: "Studio" },
   { to: "/dashboard", label: "Dashboard" },
   { to: "/upload", label: "Upload" },

@@ -105,7 +105,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     else {
         const playlistWithVideos = await Playlist.aggregate([
             {
-                $match: { _id: new mongoose.Types.ObjectId(playlistId)}
+                $match: { _id: new mongoose.Types.ObjectId(playlistId) }
             },
             {
                 $lookup: {
@@ -176,10 +176,14 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid video Id')
     }
 
-    const playlistIdd = await Playlist.findById(playlistId);
+    const playlist = await Playlist.findById(playlistId);
 
-    if (!playlistIdd) {
-        throw new ApiError(400, 'Playlist with given playlist Id not exist')
+    if (!playlist) {
+        throw new ApiError(400, "Playlist with given playlist Id not exist");
+    }
+
+    if (String(playlist.owner) !== String(req.user._id)) {
+        throw new ApiError(403, "Not allowed to modify this playlist");
     }
 
 
@@ -211,11 +215,22 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid video Id')
     }
 
+    const playlist = await Playlist.findById(playlistId);
+
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    if (String(playlist.owner) !== String(req.user._id)) {
+        throw new ApiError(403, "Not allowed to modify this playlist");
+    }
     await Playlist.findByIdAndUpdate(
         playlistId,
         { $pull: { video: new mongoose.Types.ObjectId(videoId) } },
         { new: true }
     )
+
+
 
     return res
         .status(200)

@@ -18,6 +18,7 @@ import Library from "../pages/Library";
 import WatchHistory from "../pages/WatchHistory";
 import LikedVideos from "../pages/LikedVideos";
 import Subscriptions from "../pages/Subscriptions";
+import Notifications from "../pages/Notifications";
 
 const Router = createBrowserRouter(
     createRoutesFromElements(
@@ -40,6 +41,7 @@ const Router = createBrowserRouter(
             <Route path="library/history" element={<WatchHistory />} />
             <Route path="library/liked" element={<LikedVideos />} />
             <Route path="subscriptions" element={<Subscriptions />} />
+            <Route path="notifications" element={<Notifications />} />
         </Route>
     )
 )

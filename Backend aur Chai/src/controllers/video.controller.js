@@ -5,14 +5,35 @@ import { ApiError } from "../utils/ApiError.js"
 import { ApiRes } from "../utils/ApiRes.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
-
+import { getCache, setCache, deleteCacheByPattern } from "../utils/cache.js";
+import { addVideoPublishedJob } from "../queues/video.queue.js"
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
+
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } =
+        req.validatedQuery || req.query;
+
+    const cacheKey = `videos:${JSON.stringify({
+        page,
+        limit,
+        query: query || "",
+        sortBy: sortBy || "createdAt",
+        sortType: sortType || "desc",
+        userId: userId || "",
+    })}`;
+
+    const cachedVideos = await getCache(cacheKey);
+
+    if (cachedVideos) {
+        return res.status(200).json(
+            new ApiRes(200, cachedVideos, "Video fetched successfully from cache")
+        );
+    }
+
     //TODO: get all videos based on query, sort, pagination
     const pipeline = []
 
-    const givenquery = {}
+    const givenquery = {isPublished: true,}
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
@@ -74,6 +95,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     const data = await Video.aggregate(pipeline)
 
+    await setCache(cacheKey, data, 60);
+
     return res
         .status(200)
         .json(
@@ -128,11 +151,17 @@ const publishAVideo = asyncHandler(async (req, res) => {
         owner: userId,
     })
 
+    await addVideoPublishedJob(videoFile);
+
+    await deleteCacheByPattern("videos:*");
+
+    await deleteCacheByPattern("recommendations:*");
+
     return res
-        .status(200)
+        .status(201)
         .json(
             new ApiRes(
-                200,
+                201,
                 videoFile,
                 'Video Uploaded Successfully'
             )
@@ -201,28 +230,24 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(404, 'Video not found')
     }
 
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
+    if (req.user?._id) {
+        await User.findByIdAndUpdate(req.user._id, {
             $pull: {
                 watchHistory: {
                     video: videoId
                 }
             }
-        }
-    );
+        });
 
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
+        await User.findByIdAndUpdate(req.user._id, {
             $push: {
                 watchHistory: {
                     video: videoId,
                     watchedAt: new Date()
                 }
             }
-        }
-    );
+        });
+    }
     return res
         .status(200)
         .json(
@@ -275,6 +300,9 @@ const updateVideo = asyncHandler(async (req, res) => {
         { new: true, runValidators: true }
     );
 
+    await deleteCacheByPattern("videos:*");
+    await deleteCacheByPattern("recommendations:*");
+    
     return res.status(200).json(
         new ApiRes(200, updatedVideo, "Video updated successfully")
     );
@@ -300,6 +328,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     await Video.findByIdAndDelete(videoId)
 
+    await deleteCacheByPattern("videos:*");
+    await deleteCacheByPattern("recommendations:*");
     return res
         .status(200)
         .json(
@@ -330,6 +360,9 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     video.isPublished = !video.isPublished
     await video.save({ validateBeforeSave: false })
 
+    await deleteCacheByPattern("videos:*");
+    await deleteCacheByPattern("recommendations:*");
+
     return res
         .status(200)
         .json(
@@ -344,6 +377,20 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
 const getRecommendedVideos = asyncHandler(async (req, res) => {
     const { videoId } = req.params;
     const { limit = 8 } = req.query;
+
+    const cacheKey = `recommendations:${videoId}:limit=${limit}`;
+
+    const cachedRecommendations = await getCache(cacheKey);
+
+    if (cachedRecommendations) {
+        return res.status(200).json(
+            new ApiRes(
+                200,
+                cachedRecommendations,
+                "Recommended videos fetched successfully from cache"
+            )
+        );
+    }
 
     if (!mongoose.isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid video id");
@@ -430,6 +477,8 @@ const getRecommendedVideos = asyncHandler(async (req, res) => {
             },
         },
     ]);
+
+    await setCache(cacheKey, videos, 300);
 
     return res.status(200).json(
         new ApiRes(200, videos, "Recommended videos fetched successfully")

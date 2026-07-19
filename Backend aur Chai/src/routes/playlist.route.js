@@ -1,4 +1,12 @@
 import { Router } from 'express';
+import { validate } from "../middlewares/validate.middleware.js";
+import {
+    createPlaylistSchema,
+    playlistIdParamSchema,
+    playlistVideoParamsSchema,
+    updatePlaylistSchema,
+    userIdParamSchema,
+} from "../validators/playlist.validator.js";
 import {
     addVideoToPlaylist,
     createPlaylist,
@@ -12,19 +20,32 @@ import {verifyJWT} from "../middlewares/auth.middleware.js"
 
 const router = Router();
 
-router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
+router.use(verifyJWT);
 
-router.route("/").post(createPlaylist)
+router.route("/").post(
+    validate(createPlaylistSchema),
+    createPlaylist
+);
 
 router
     .route("/:playlistId")
-    .get(getPlaylistById)
-    .patch(updatePlaylist)
-    .delete(deletePlaylist);
+    .get(validate(playlistIdParamSchema), getPlaylistById)
+    .patch(validate(updatePlaylistSchema), updatePlaylist)
+    .delete(validate(playlistIdParamSchema), deletePlaylist);
 
-router.route("/add/:videoId/:playlistId").patch(addVideoToPlaylist);
-router.route("/remove/:videoId/:playlistId").patch(removeVideoFromPlaylist);
+router.route("/add/:videoId/:playlistId").patch(
+    validate(playlistVideoParamsSchema),
+    addVideoToPlaylist
+);
 
-router.route("/user/:userId").get(getUserPlaylists);
+router.route("/remove/:videoId/:playlistId").patch(
+    validate(playlistVideoParamsSchema),
+    removeVideoFromPlaylist
+);
+
+router.route("/user/:userId").get(
+    validate(userIdParamSchema),
+    getUserPlaylists
+);
 
 export default router
