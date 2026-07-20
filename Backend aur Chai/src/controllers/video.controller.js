@@ -33,7 +33,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     //TODO: get all videos based on query, sort, pagination
     const pipeline = []
 
-    const givenquery = {isPublished: true,}
+    const givenquery = { isPublished: true, }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
@@ -151,7 +151,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
         owner: userId,
     })
 
-    await addVideoPublishedJob(videoFile);
+    try {
+        await addVideoPublishedJob(videoFile);
+    } catch (error) {
+        console.warn("[QUEUE FAILED] video.published job not added:", error.message);
+    }
 
     await deleteCacheByPattern("videos:*");
 
@@ -302,7 +306,7 @@ const updateVideo = asyncHandler(async (req, res) => {
 
     await deleteCacheByPattern("videos:*");
     await deleteCacheByPattern("recommendations:*");
-    
+
     return res.status(200).json(
         new ApiRes(200, updatedVideo, "Video updated successfully")
     );
