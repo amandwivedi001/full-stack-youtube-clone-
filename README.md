@@ -210,3 +210,17 @@ The application is designed to scale horizontally.
 - Background processing is handled by dedicated **BullMQ workers**, keeping long-running tasks outside the request-response lifecycle.
 
 This architecture allows backend instances to be added or removed without affecting application state.
+
+
+## Deployment Strategy
+
+The current live deployment uses:
+
+- Frontend: Vercel
+- Backend: Render
+- Database: MongoDB Atlas
+- Media storage: Cloudinary
+
+The Docker/Nginx setup is used as a production-style local scaling environment. It validates how the app can run with multiple backend instances behind an Nginx reverse proxy/load balancer, Redis-backed caching/rate limiting, and BullMQ background workers.
+
+This keeps the live resume/demo link stable while allowing scaling features to be developed and tested safely on a separate branch.
