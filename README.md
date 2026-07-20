@@ -223,4 +223,31 @@ The current live deployment uses:
 
 The Docker/Nginx setup is used as a production-style local scaling environment. It validates how the app can run with multiple backend instances behind an Nginx reverse proxy/load balancer, Redis-backed caching/rate limiting, and BullMQ background workers.
 
-This keeps the live resume/demo link stable while allowing scaling features to be developed and tested safely on a separate branch.
+
+## Live Deployment
+
+The production deployment currently uses:
+
+- Frontend: Vercel
+- Backend API: Render Web Service
+- Database: MongoDB Atlas
+- Cache / Rate Limiting: Render Key Value Redis
+- Media Storage: Cloudinary
+- CI: GitHub Actions
+
+BullMQ background job architecture is implemented and tested. In the free production deployment, the worker service is disabled unless `ENABLE_VIDEO_WORKER=true` and a separate worker service is deployed.
+
+## Production Architecture
+
+```txt
+User Browser
+    ↓
+Vercel Frontend
+    ↓
+Render Backend API
+    ↓
+MongoDB Atlas
+    ↓
+Cloudinary for media
+    ↓
+Render Key Value Redis for cache/rate limiting
