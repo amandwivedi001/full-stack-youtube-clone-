@@ -20,6 +20,11 @@ export const videoQueue = new Queue("video-processing", {
 });
 
 export const addVideoPublishedJob = async (video) => {
+    if (process.env.ENABLE_VIDEO_WORKER !== "true") {
+        console.log("[QUEUE SKIPPED] ENABLE_VIDEO_WORKER is not true");
+        return null;
+    }
+
     return videoQueue.add("video.published", {
         videoId: video._id.toString(),
         ownerId: video.owner.toString(),

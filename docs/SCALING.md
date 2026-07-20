@@ -13,6 +13,8 @@ The live demo currently uses:
 
 The Docker/Nginx setup is used as a local production-style scaling environment.
 
+In the free production deployment, the backend uses Redis for cache and rate limiting. BullMQ worker processing is implemented and tested locally/Docker, but the production worker is disabled unless `ENABLE_VIDEO_WORKER=true` and a worker service is deployed.
+
 ## Why Docker Is Used
 
 Docker gives every service a predictable runtime. Instead of relying on one developer machine, the app can run with the same Node.js version, Nginx config, Redis version, and service network every time.
